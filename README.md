@@ -16,10 +16,7 @@ the end of the course it holds the platform your group defends orally:
 
 | Name | GitHub | Role |
 |---|---|---|
-| | | |
-| | | |
-| | | |
-| | | |
+| Julius Hayter | [JuliusHayter](https://github.com/JuliusHayter) | |
 
 ## How this repo grows
 
