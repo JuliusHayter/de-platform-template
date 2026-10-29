@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "clickstream/v1",
+  "title": "Clickstream event, schema_version 1",
+  "description": "Common envelope plus the fields of each event_type. The consumer picks the schema file by schema_version and rejects any event that does not validate.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "event_time",
+    "emitted_at",
+    "session_id",
+    "buyer_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_type": {
+      "enum": [
+        "product_viewed",
+        "added_to_cart",
+        "order_placed"
+      ]
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "emitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "buyer_id": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "product_viewed"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "p_id",
+          "price"
+        ],
+        "properties": {
+          "p_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "added_to_cart"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "p_id",
+          "qty",
+          "price"
+        ],
+        "properties": {
+          "p_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "qty": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "order_placed"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "order_id",
+          "payment_method",
+          "amount",
+          "currency",
+          "items"
+        ],
+        "properties": {
+          "order_id": {
+            "type": "integer"
+          },
+          "payment_method": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "currency": {
+            "const": "EUR"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "p_id",
+                "qty",
+                "price"
+              ],
+              "properties": {
+                "p_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "qty": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "price": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false
+}

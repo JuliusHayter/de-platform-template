@@ -35,3 +35,28 @@ more than the bucket.
 
 BigQuery queries (lesson 4), network egress, and the project's other
 resources. Extend this file every lesson.
+
+## Lesson 3: ingestion
+
+Same prices and date as above (Standard $0.020 per GiB-month, Class A
+$0.005 per 1,000, read 2026-10-29). Sizes read from the bucket with
+`gcloud storage du` after the consumer run ended.
+
+| Item | Quantity | Cost |
+|---|---|---|
+| `bronze/orders_pg/`, 224,968 orders as zstd Parquet | 3.85 MB in 38 objects | $0.00007 per month |
+| `bronze/clickstream/`, about 11,000 events so far | 1.17 MB in 51 objects | $0.00002 per month |
+| `bronze/_dlq/` | 2.7 KB in 1 object | negligible |
+| `bronze/<table>_pg/`, six tables as one file each | 28.7 MB | $0.0005 per month |
+| Whole bucket now | 107.1 MB, was 73.4 MB | $0.0020 per month |
+| Writes for the new objects, about 100 | | $0.0005, once |
+
+Storage is still not the cost. The consumer's cost is operations: every flush is
+a Class A write. At `BATCH=200`, writing the topic's 24,807 events took 151
+files; at 5,000 per batch it takes a handful. If the producers sent a hundred
+times more events, a small batch would mean about a hundred times more writes
+and files, while storage would stay in cents. Batch size, not data size, is the
+setting that controls the bill.
+
+Not counted: the BigQuery cost of querying these files (lesson 4), and the
+laptop that runs Kafka and PostgreSQL, which is not a cloud cost.

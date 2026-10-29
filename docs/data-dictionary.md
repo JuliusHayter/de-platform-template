@@ -195,6 +195,63 @@ Every table also has an `Unnamed: 0` column (INT64, the exporter's row index; `n
 `returns(return_id, buyer_id, p_id, order_id)`. Types are unknown because no row
 exists; `buyer_id` is `indirect`, the rest `no`.
 
+## Clickstream (L03)
+
+`bronze/clickstream/dt=YYYY-MM-DD/`, Parquet written by
+`ingestion/consume_clickstream.py`. `dt` is the day of `event_time` and lives in
+the path only. One row per event; fields outside an event's type are null. The
+schema is [`ingestion/clickstream.schema.json`](../ingestion/clickstream.schema.json).
+
+| Column | Type | Meaning | PII |
+|---|---|---|---|
+| schema_version | INT64 | Version of the event schema (1) | no |
+| event_id | STRING | Unique event id (UUID), the key for deduplication | no |
+| event_type | STRING | `product_viewed`, `added_to_cart` or `order_placed` | no |
+| event_time | STRING | When it happened (ISO 8601, simulated clock) | no |
+| emitted_at | STRING | When the storefront sent it (real clock) | no |
+| session_id | STRING | One shopping session (UUID); links a person's events together | indirect |
+| buyer_id | STRING | The buyer; joins to `buyer`/`customer` | indirect |
+| p_id | STRING | Product viewed or added (not on `order_placed`) | no |
+| price | FLOAT64 | Unit price at the time (not on `order_placed`) | no |
+| qty | INT64 | Units added (`added_to_cart` only) | no |
+| order_id | INT64 | The order created (`order_placed` only); joins to `orders` | indirect |
+| payment_method | STRING | `Credit Card` or `PayPal` (`order_placed` only) | no |
+| amount | FLOAT64 | Order total (`order_placed` only) | no |
+| currency | STRING | Always `EUR` in version 1 | no |
+| items | LIST<STRUCT<p_id, qty, price>> | Order lines (`order_placed` only) | no |
+
+`buyer_id` and `session_id` are pseudonymous, not anonymous: they carry no name,
+but `buyer_id` joins straight to `customer.fname`, `lname`, `phone` and `email`,
+and `session_id` shows one person's browsing in order. Treat them as personal
+data. Events hold no payment card data.
+
+**Dead letter:** `bronze/_dlq/clickstream/dt=<day received>/`. Columns: `raw`
+(the message as received, which may itself contain anything a client sent, so
+treat it as sensitive), `reason`, `received_at`, `topic`, `partition`, `offset`.
+
+## Which path wrote which table
+
+Bronze does not have one shape. The origin decides the columns.
+
+| Bronze prefix | Written by | Differences |
+|---|---|---|
+| `bronze/<table>/` (27 tables) | `ingestion/bronze_export.py` from the CSV export, run by hand in L02 | Has the exporter's `Unnamed: 0` column on most tables; dates are strings |
+| `bronze/orders_pg/` | `ingestion/extract_orders.py`, from PostgreSQL | Same columns as the database `orders` table, without `Unnamed: 0`; `order_date` keeps the database type; partitioned by `dt=YYYY-MM`; new files only, no history before the first run |
+| `bronze/<table>_pg/part-0.parquet` for `order_items`, `review`, `product_reviews`, `product`, `customer_shipping`, `shipping_details` | `ingestion/extract_tables.py`, full refresh | Database column names and types, without `Unnamed: 0`; one file, overwritten on each run; no partition column |
+| `bronze/clickstream/` | `ingestion/consume_clickstream.py` | As above |
+| `bronze/_dlq/clickstream/` | the same consumer | As above |
+
+The extractor can copy `customer` and `payment_details` with `pwd`, `card_no`,
+`cvv` and `expiry_date` left out, but the L02 copies in `bronze/customer/` and
+`bronze/payment_details/` still contain them.
+
+None of these carries Airbyte's four extra columns (`_airbyte_raw_id`,
+`_airbyte_extracted_at`, `_airbyte_meta`, `_airbyte_generation_id`), because no
+Airbyte connection exists (see [ADR-0003](adr/0003-ingestion-modes.md)). If one
+is added later, tables from that path will have them and the others will not.
+`bronze/orders` and `bronze/orders_pg` hold overlapping orders from two paths;
+silver has to pick one.
+
 ## What this tells lesson 3 and lesson 10
 
 Never ingest into silver: `customer.pwd`, `payment_details.card_no`,
