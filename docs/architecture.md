@@ -20,27 +20,39 @@ system unredacted, which constrains every layer built on top of it.
 flowchart LR
   checkout[(Web shop: checkout)] --> pg[(PostgreSQL: operational DB)]
   reviews[(Web shop: reviews)] --> pg
-  pg -->|CSV export, 27 tables| bronze
+  checkout -->|JSON events| kafka[[Kafka topic: clickstream]]
+
+  pg -->|"extract_orders.py: incremental, order_id cursor, new rows only"| orders_pg
+  kafka -->|"consume_clickstream.py: at-least-once, schema-checked"| clickstream
+  kafka -.->|"rejected events"| dlq
+  pg -.->|"change data capture: tried by hand, no pipeline"| bronze
+  csv[CSV export, loaded by hand in L02] --> tables
 
   subgraph gcs[Cloud Storage: data-engineering-a-groupe-julius-bronze, europe-west1, uniform access]
-    bronze[(bronze/<br/>zstd Parquet, 135 objects, 73 MB<br/>orders, order_items, payment: dt=YYYY-MM<br/>24 other tables: one file each<br/>lifecycle: Nearline 30d, Coldline 90d, Archive 365d, never delete)]
+    subgraph bronze[bronze/]
+      tables[(27 tables, zstd Parquet<br/>dt=YYYY-MM on 3 of them)]
+      orders_pg[(orders_pg/<br/>dt=YYYY-MM)]
+      clickstream[(clickstream/<br/>dt=YYYY-MM-DD, by event_time)]
+      dlq[(_dlq/clickstream/<br/>rejected events)]
+    end
   end
 
   access{{Access today: project owners, editors and viewers via default legacy roles}} -.-> bronze
-  bronze -.->|external table, queries only| bq[BigQuery dataset bronze_julius]
   bronze -->|planned| silver[(Silver — warehouse, not built yet)]
   silver --> gold[(Gold — warehouse, not built yet)]
   gold --> analysts[Analysts]
   gold --> ml[ML team: daily demand]
 ```
 
-Bronze is built: one regional bucket holding the whole export. Access is the
-project default, wider than the design: every project editor can write and
-every viewer can read, secrets included. Dedicated service accounts could not
-be created with my permissions (see [`infra/iam.md`](../infra/iam.md)). Silver
-and gold are still the plan from [ADR-0001](adr/0001-target-architecture.md).
-Layout choices are argued in [ADR-0002](adr/0002-bronze-layout.md); the
-lifecycle rule is in [`infra/lifecycle.json`](../infra/lifecycle.json).
+Two automated paths now write into bronze: the extractor (from PostgreSQL) and
+the consumer (from Kafka). The third, change data capture, was run by hand in
+exercise 1 and has no pipeline, so its arrow is dashed. There is no Airbyte
+connector. Neither script is scheduled yet; I start them by hand until
+lesson 7. Access is still the project default
+([`infra/iam.md`](../infra/iam.md)). Choices are argued in
+[ADR-0002](adr/0002-bronze-layout.md) and
+[ADR-0003](adr/0003-ingestion-modes.md); failure behaviour is in
+[`ingestion-failure-modes.md`](ingestion-failure-modes.md).
 
 ## Layers
 
@@ -56,6 +68,7 @@ lifecycle rule is in [`infra/lifecycle.json`](../infra/lifecycle.json).
 |---|---|---|
 | [0001](adr/0001-target-architecture.md) | Two-tier architecture: object storage for bronze, a warehouse for silver and gold | Accepted |
 | [0002](adr/0002-bronze-layout.md) | Bronze as zstd Parquet, partitioned by month on the three transactional tables | Accepted |
+| [0003](adr/0003-ingestion-modes.md) | Streaming consumer for clickstream, incremental cursor for orders, updates and deletes unhandled | Accepted |
 
 ## Change log
 
@@ -63,3 +76,4 @@ lifecycle rule is in [`infra/lifecycle.json`](../infra/lifecycle.json).
 |---|---|
 | L01 | First version |
 | L02 | Bronze built: bucket, layout, lifecycle and real access shown; silver and gold still planned |
+| L03 | Two ingestion paths into bronze (extractor, consumer) with a dead letter queue; change data capture and Airbyte not built |

@@ -36,3 +36,7 @@ orchestration/logs/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local pipeline state and output
+.state/
+out/
