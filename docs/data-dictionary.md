@@ -237,8 +237,13 @@ Bronze does not have one shape. The origin decides the columns.
 |---|---|---|
 | `bronze/<table>/` (27 tables) | `ingestion/bronze_export.py` from the CSV export, run by hand in L02 | Has the exporter's `Unnamed: 0` column on most tables; dates are strings |
 | `bronze/orders_pg/` | `ingestion/extract_orders.py`, from PostgreSQL | Same columns as the database `orders` table, without `Unnamed: 0`; `order_date` keeps the database type; partitioned by `dt=YYYY-MM`; new files only, no history before the first run |
+| `bronze/<table>_pg/part-0.parquet` for `order_items`, `review`, `product_reviews`, `product`, `customer_shipping`, `shipping_details` | `ingestion/extract_tables.py`, full refresh | Database column names and types, without `Unnamed: 0`; one file, overwritten on each run; no partition column |
 | `bronze/clickstream/` | `ingestion/consume_clickstream.py` | As above |
 | `bronze/_dlq/clickstream/` | the same consumer | As above |
+
+The extractor can copy `customer` and `payment_details` with `pwd`, `card_no`,
+`cvv` and `expiry_date` left out, but the L02 copies in `bronze/customer/` and
+`bronze/payment_details/` still contain them.
 
 None of these carries Airbyte's four extra columns (`_airbyte_raw_id`,
 `_airbyte_extracted_at`, `_airbyte_meta`, `_airbyte_generation_id`), because no

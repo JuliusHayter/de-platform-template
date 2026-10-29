@@ -40,16 +40,16 @@ resources. Extend this file every lesson.
 
 Same prices and date as above (Standard $0.020 per GiB-month, Class A
 $0.005 per 1,000, read 2026-10-29). Sizes read from the bucket with
-`gcloud storage du` while the consumer was still running, so the clickstream
-figure was still growing slowly.
+`gcloud storage du` after the consumer run ended.
 
 | Item | Quantity | Cost |
 |---|---|---|
 | `bronze/orders_pg/`, 224,968 orders as zstd Parquet | 3.85 MB in 38 objects | $0.00007 per month |
-| `bronze/clickstream/`, about 11,000 events so far | 1.13 MB in 48 objects | $0.00002 per month |
+| `bronze/clickstream/`, about 11,000 events so far | 1.17 MB in 51 objects | $0.00002 per month |
 | `bronze/_dlq/` | 2.7 KB in 1 object | negligible |
-| Whole bucket now | 78.4 MB, was 73.4 MB | $0.0015 per month |
-| Writes for the new objects, about 87 | | $0.0004, once |
+| `bronze/<table>_pg/`, six tables as one file each | 28.7 MB | $0.0005 per month |
+| Whole bucket now | 107.1 MB, was 73.4 MB | $0.0020 per month |
+| Writes for the new objects, about 100 | | $0.0005, once |
 
 Storage is still not the cost. The consumer's cost is operations: every flush is
 a Class A write. At `BATCH=200`, writing the topic's 24,807 events took 151

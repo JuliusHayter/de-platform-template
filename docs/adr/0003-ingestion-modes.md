@@ -14,8 +14,9 @@ database (orders and the tables around them). Both are the company's live stack;
 the events and the live orders are generated at 400 times real time.
 
 My teacher's route for this course was route 3: no Airbyte, because routes 1
-and 2 were not workable. So the "connector" is a script I wrote, and there is
-no Airbyte connection in the repository.
+and 2 were not workable. So the "connector" is a script I wrote
+(`ingestion/extract_tables.py`), and there is no Airbyte connection or exported
+configuration in the repository.
 
 The figures below are from my own runs of the exercise steps on this stack.
 
@@ -46,6 +47,13 @@ build and run it with what I had.
   the write. Guarantee: at-least-once. It sees new orders only. It writes to
   `bronze/orders_pg/`, apart from the CSV-derived `bronze/orders/`, because the
   two have different column sets and types.
+- **The other six tables** (`order_items`, `review`, `product_reviews`,
+  `product`, `customer_shipping`, `shipping_details`): `extract_tables.py`, a
+  full refresh that overwrites one file per table, so a re-run cannot duplicate.
+  Secret columns (`pwd`, `card_no`, `cvv`, and `expiry_date`) are removed from
+  the column list before the query is sent, and `check_secrets_excluded.py`
+  reads the output back and fails if one is there. Rejected for these tables:
+  a cursor, since none of them has a column I could trust for updates.
 - **Updates and deletes:** not handled. **Planned, not built:** a daily full
   refresh of `product` (42,858 rows, about 4.8 MB as Parquet), where prices
   change and a cursor cannot see it; the other mutable tables are not yet
@@ -72,6 +80,10 @@ build and run it with what I had.
   reader to operate); a second schema version of the events (add a validator
   per version, as the consumer is written to allow); partitions that stay small
   at real volumes (batch less often).
+- **Weaker than a connector:** the exclusion is in my code, not in a tool's
+  configuration, so a later `SELECT *` would undo it and only the check script
+  would notice. Full refresh also copies every row each time (415,047
+  `order_items` rows today).
 - **Not true yet:** nothing starts these two scripts; both run only when I run
   them until the scheduler of lesson 7. "No human in the loop" holds for the
   data path, not for starting it.

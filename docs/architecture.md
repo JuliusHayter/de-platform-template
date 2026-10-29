@@ -23,6 +23,7 @@ flowchart LR
   checkout -->|JSON events| kafka[[Kafka topic: clickstream]]
 
   pg -->|"extract_orders.py: incremental, order_id cursor, new rows only"| orders_pg
+  pg -->|"extract_tables.py: full refresh of 6 tables, secrets left out"| tables_pg
   kafka -->|"consume_clickstream.py: at-least-once, schema-checked"| clickstream
   kafka -.->|"rejected events"| dlq
   pg -.->|"change data capture: tried by hand, no pipeline"| bronze
@@ -32,6 +33,7 @@ flowchart LR
     subgraph bronze[bronze/]
       tables[(27 tables, zstd Parquet<br/>dt=YYYY-MM on 3 of them)]
       orders_pg[(orders_pg/<br/>dt=YYYY-MM)]
+      tables_pg[(6 more tables as table_pg/<br/>one file each)]
       clickstream[(clickstream/<br/>dt=YYYY-MM-DD, by event_time)]
       dlq[(_dlq/clickstream/<br/>rejected events)]
     end
@@ -44,8 +46,8 @@ flowchart LR
   gold --> ml[ML team: daily demand]
 ```
 
-Two automated paths now write into bronze: the extractor (from PostgreSQL) and
-the consumer (from Kafka). The third, change data capture, was run by hand in
+Three scripts now write into bronze: two extractors (from PostgreSQL) and the
+consumer (from Kafka). The third, change data capture, was run by hand in
 exercise 1 and has no pipeline, so its arrow is dashed. There is no Airbyte
 connector. Neither script is scheduled yet; I start them by hand until
 lesson 7. Access is still the project default

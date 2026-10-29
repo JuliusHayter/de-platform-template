@@ -1,8 +1,9 @@
 # Ingestion failure modes
 
-What each pipeline does when something goes wrong, tested where I could. Two
-pipelines exist: the **extractor** (`ingestion/extract_orders.py`, incremental
-batch from PostgreSQL) and the **consumer** (`ingestion/consume_clickstream.py`,
+What each pipeline does when something goes wrong, tested where I could. Three
+scripts exist: the **extractor** (`ingestion/extract_orders.py`, incremental
+batch from PostgreSQL; `ingestion/extract_tables.py`, full refresh of six more
+tables) and the **consumer** (`ingestion/consume_clickstream.py`,
 Kafka streaming). Change data capture was only run by hand in exercise 1 (a
 replication slot read with SQL); no pipeline reads it. There is no Airbyte
 connector (see [ADR-0003](adr/0003-ingestion-modes.md)).
@@ -22,6 +23,7 @@ the code and is labelled so.
 | Duplicate after a restart | **Not handled** (by design) | Consumer writes before it commits, so duplicates are the price of never losing a batch. Extractor saves its cursor after the write | Tested: I killed the consumer between write and commit; the restart gave 9 files, 1,403 rows, 1,203 distinct `event_id`, **200 duplicates**: one flush of 200 rows. Bronze keeps them; silver must deduplicate on `event_id`. The extractor can repeat its last batch only if it dies between the write and the cursor save. Not tested. |
 | Credential expires | **Not handled** | Nothing renews or warns | Tested by accident: my Google credentials expired during this work and writing to the bucket failed with `invalid_grant`. The consumer crashes at the write, before committing, so it loses nothing and re-reads on restart. A rotated PostgreSQL password makes the extractor exhaust its retries and exit. In both cases the pipeline stops and stays stopped. |
 | Bucket write fails | Partly | The exception ends the process before the offset or cursor is saved | Reasoned, same mechanism as the line above: nothing is lost, the batch is read again. No retry on the write itself. |
+| Secret column selected | Yes, by construction | `extract_tables.py` removes `pwd`, `card_no`, `cvv` and `expiry_date` from the column list; `check_secrets_excluded.py` reads the output back | Tested: output of `customer` has no `pwd`, `payment_details` keeps only `payment_id` and `billing_address`. **Weaker than a connector:** a later edit to `SELECT *` would send them, and only running the check would catch it. Bronze from L02 still holds them (`bronze/customer/`, `bronze/payment_details/`). |
 | Late event | Yes | Partition by `event_time`, not `emitted_at` | Reasoned: a late event lands in the day it happened. That day may already have been read by a downstream job (lesson 7). |
 | Small files | **Not handled** | `BATCH` and `BATCH_ROWS` settings only | Tested: `BATCH=200` wrote 151 files for 24,807 events; `order_id` batches of 50,000 scattered over 36 months gave 191 files for the orders load, 38 with one batch. Lesson 2's over-partitioning cost, paid again. |
 
