@@ -252,6 +252,28 @@ is added later, tables from that path will have them and the others will not.
 `bronze/orders` and `bronze/orders_pg` hold overlapping orders from two paths;
 silver has to pick one.
 
+## Known defects, and where dbt handles them
+
+Found by profiling the bronze tables on 2026-10-29. Each is handled in exactly one
+model, or left alone with a reason. Models are in [`transform/models/`](../transform/models).
+
+| Defect | Count | Handled in |
+|---|---|---|
+| `Unnamed: 0`, the exporter's row index, on most tables | every row | Not selected, in each staging model |
+| `dt`, a partition column the external table adds from the file path | every row of `orders`, `order_items`, `payment` | Not selected in `stg_orders`, `stg_order_items`, `stg_payment` |
+| `order_date` held as text | 222,644 | `stg_orders`, parsed to DATE |
+| `created_at` held as text | 222,644 | `stg_payment`, parsed to TIMESTAMP |
+| `discount_id` stored as a float | 222,644 | `stg_orders`, cast to INT64 |
+| Payment `amount` as a float, unfit for equality | 222,644 | `stg_payment`, rounded to cents as NUMERIC |
+| Blank review text: a single space | 110 | `stg_review`, turned into NULL |
+| Missing review text: NULL | 27 | Already NULL. The lesson's "14 empty strings" arrived as NULL here, because pandas reads an empty CSV field as missing |
+| Empty product name | 6 | `stg_product`, turned into NULL; reported by a warning |
+| Prices with floating-point noise | 35,205 of 42,858 | `stg_product`, rounded to cents |
+| Five products priced under half a cent, which round to 0.00 | 5 products, 30 order lines | **Left alone**: real rows of the source. Reported by two warnings |
+| Twin orders, duplicates the export never marked | 111,322 | `int_orders`, by one rule (buyer, card, discount, date, amount). Under-removes: see [acceptance-criteria.md](acceptance-criteria.md) |
+| Personal data in `shipping_details` (street, zip, phone) | 200,001 | `stg_shipping_details`, not selected |
+| `seller_name` empty on every seller; `phone` loses leading zeros | all | **Left alone**: not read by this project |
+
 ## What this tells lesson 3 and lesson 10
 
 Never ingest into silver: `customer.pwd`, `payment_details.card_no`,

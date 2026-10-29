@@ -1,0 +1,62 @@
+version: 2
+
+# Bronze, declared and not built: dbt never writes here. These are the external
+# tables over the lesson 2 Parquet in the bucket (bronze/<table>/). `identifier`
+# is the real table name; models only ever say source('marketplace', '<name>').
+sources:
+  - name: marketplace
+    description: "Bronze, as landed in lesson 2. A static export up to 2026-09-14 until the lesson 3 pipelines are scheduled."
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
+    schema: bronze_julius
+    tables:
+      - name: orders
+        identifier: orders_external
+        description: "Orders, one row per order as exported, twins included."
+        config:
+          # Measured on the newest order_date. Without a column, dbt reads the
+          # table's last-modified time, which for an external table is when its
+          # definition was created, not how old the files are: my first run passed
+          # on that and meant nothing. order_date has no time of day, so the newest
+          # order is dated midnight. The business sells on a working week (Saturday
+          # is 0.1% of orders), so on a Monday morning the newest order is already
+          # 3 days old; 4 days is therefore a warning and 7 an error.
+          loaded_at_field: "TIMESTAMP(order_date)"
+          freshness:
+            warn_after: {count: 4, period: day}
+            error_after: {count: 7, period: day}
+      - name: order_items
+        identifier: order_items_external
+        description: "Order lines. No date of its own; the date lives on the order."
+        # No freshness: it has no timestamp, and the metadata fallback would
+        # measure the table definition. It is checked through orders.
+      - name: payment
+        identifier: payment_external
+        description: "One payment per order. Source of the order amount."
+        config:
+          # created_at carries the time of day, so it can be tighter than orders:
+          # a Friday evening payment is about 64 hours old on Monday at 09:00.
+          # 72 hours is a warning, 5 days an error (a long weekend). A stale
+          # payment table stops order amounts, which int_orders needs to decide
+          # which orders are twins.
+          loaded_at_field: "PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', created_at)"
+          freshness:
+            warn_after: {count: 72, period: hour}
+            error_after: {count: 5, period: day}
+      - name: product
+        identifier: product_external
+        description: "The catalogue. Prices change; names rarely do."
+        # No freshness: no timestamp column. A stale price misstates the
+        # dimension, not revenue (revenue uses the price at purchase), so this is
+        # the one source where being late costs the least.
+      - name: review
+        identifier: review_external
+        description: "Reviews. Free text and a rating."
+      - name: product_reviews
+        identifier: product_reviews_external
+        description: "Which product each review is about."
+      - name: customer_shipping
+        identifier: customer_shipping_external
+        description: "Which addresses belong to which customer; one is the default."
+      - name: shipping_details
+        identifier: shipping_details_external
+        description: "Addresses. Contains personal data; only the country is carried forward."

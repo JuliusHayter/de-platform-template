@@ -43,11 +43,17 @@ flowchart LR
   bronze -->|"external tables, read on every query"| ext[bronze_julius: external tables]
   ext -->|"copy 7 tables, cast order_date"| wh[(BigQuery warehouse_julius: 7 native tables<br/>order_items partitioned by month + clustered by p_id)]
   wh --> mv[(daily_demand: materialised view<br/>partitioned like its base)]
-  bronze -->|planned| silver[(Silver — not built yet)]
-  silver --> gold[(Gold — warehouse, not built yet)]
+  ext -->|"dbt: staging, one defect fixed per source"| silver[(Silver: l05_julius<br/>8 staging + 4 intermediate views<br/>int_orders: one definition of an order)]
+  silver -->|"dbt: tables, grain declared and tested"| gold[(Gold: l05_julius<br/>fct_order_items, fct_daily_demand<br/>dim_product, dim_country, dim_date)]
   gold --> analysts[Analysts]
   gold --> ml[ML team: daily demand]
+  tests{{"62 tests + 2 freshness checks<br/>docs/acceptance-criteria.md"}} -.-> gold
 ```
+
+Silver and gold now exist (lesson 5): a dbt project reads bronze through
+external tables and builds the star schema in `l05_julius`. Revenue now has one
+definition, which is a rule that under-removes duplicate orders, so it is a better
+answer and not yet the true one ([`acceptance-criteria.md`](acceptance-criteria.md)).
 
 Bronze is queryable through BigQuery (lesson 4): seven tables are copied into
 native, tuned tables and one materialised view serves the ML team's daily
@@ -70,7 +76,7 @@ lesson 7. Access is still the project default
 | Layer | What lands here | What it guarantees | Who reads it |
 |---|---|---|---|
 | Bronze | 27 tables from the operational database as zstd Parquet in `europe-west1`; `orders`, `order_items`, `payment` partitioned by month | Nothing that arrived is lost or altered; full raw history is kept, including rows later found to be duplicates or errors. Holds secrets (passwords, card data), flagged in the [data dictionary](data-dictionary.md) | Intended: silver job only, no direct analyst or ML access. Today: the whole project (see `infra/iam.md`) |
-| Silver | Deduplicated orders, customers and products, with payment and password data stripped | One agreed version of each fact; no secrets; history of changes over time, not just the current state | Pipeline jobs building gold tables |
+| Silver | Built (L05): staging views fixing one named defect each, and intermediate views holding the joins that decide something. Twin orders collapsed by one rule; no contact or payment data selected | One agreed version of each fact, with the limit that the twin rule under-removes. **No history of changes**: there are no snapshots | Pipeline jobs building gold tables |
 | Gold | Tables that answer a named question: reporting tables for analysts, the daily units-sold-by-product-by-country table for the ML team | Each table answers one stated question and is safe to query directly | Analysts, ML team |
 
 ## Decisions
@@ -81,6 +87,7 @@ lesson 7. Access is still the project default
 | [0002](adr/0002-bronze-layout.md) | Bronze as zstd Parquet, partitioned by month on the three transactional tables | Accepted |
 | [0003](adr/0003-ingestion-modes.md) | Streaming consumer for clickstream, incremental cursor for orders, updates and deletes unhandled | Accepted |
 | [0004](adr/0004-warehouse-pricing.md) | BigQuery on demand with a per-query byte cap | Accepted |
+| [0005](adr/0005-materialisations.md) | Views for staging and intermediate, tables for marts | Accepted |
 
 ## Change log
 
@@ -90,3 +97,4 @@ lesson 7. Access is still the project default
 | L02 | Bronze built: bucket, layout, lifecycle and real access shown; silver and gold still planned |
 | L03 | Two ingestion paths into bronze (extractor, consumer) with a dead letter queue; change data capture and Airbyte not built |
 | L04 | Warehouse added: bronze queryable, 7 native tables, month partitions, a materialised view, a byte cap. Slow-query runbook in `docs/runbooks/` |
+| L05 | Silver and gold built with dbt in `transform/`: sources, staging, one definition of an order, a star schema with declared and tested grains, 62 tests and freshness. Lineage in `docs/lineage.md` |
