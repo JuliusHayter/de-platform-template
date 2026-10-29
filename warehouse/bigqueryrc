@@ -1,0 +1,6 @@
+# Default ceiling for every query run through the bq CLI with:
+#   bq --bigqueryrc=warehouse/bigqueryrc query ...
+# 1 GiB. The biggest query in this project bills 21 MB; this stops a runaway
+# one at under a cent. The console has its own setting (Query settings -> Advanced).
+[query]
+maximum_bytes_billed=1073741824
