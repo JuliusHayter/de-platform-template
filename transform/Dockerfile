@@ -11,6 +11,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /usr/app
 
+# git, because `dbt debug` fails without it even when no package comes from git.
+# The Debian version is pinned: if the mirror ever drops it the build fails loudly,
+# which is better than quietly installing a different git.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git=1:2.39.5-0+deb12u3 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY transform/requirements.lock ./
 RUN pip install --no-cache-dir -r requirements.lock \
     && useradd --create-home --uid 10001 dbt \
