@@ -1,0 +1,4 @@
+# Direct dependencies, exact: the versions of the course image
+# charlestng/dbt-bigquery:1.12.1. requirements.lock is the full tree.
+dbt-core==1.12.5
+dbt-bigquery==1.12.1
