@@ -1,0 +1,22 @@
+name: 'albert'
+version: '1.0.0'
+profile: 'albert'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+
+# The dim_date range. date_spine's end is exclusive. Widen it when the data does.
+vars:
+  date_start: "2023-01-01"
+  date_end: "2027-01-01"
+
+# How each layer is built; the keys are folders under models/.
+# Reasons are in docs/adr/0005-materialisations.md.
+models:
+  albert:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

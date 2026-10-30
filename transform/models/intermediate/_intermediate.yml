@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: int_orders
+    description: "One row per order, twins collapsed by the lesson 1 rule. GRAIN: (order_id)."
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+  - name: int_order_items
+    description: "Order lines of the kept orders, with date and buyer. GRAIN: (order_id, p_id)."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, p_id]
+  - name: int_customer_addresses
+    description: "One row per customer: the default address. GRAIN: (c_id). Without this rule an order would be repeated once per address."
+    columns:
+      - name: c_id
+        data_tests: [unique, not_null]
+  - name: int_product_ratings
+    description: "One row per product that has reviews. GRAIN: (p_id). Aggregated BEFORE joining, so reviews cannot fan out."
+    columns:
+      - name: p_id
+        data_tests: [unique, not_null]

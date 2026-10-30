@@ -1,0 +1,114 @@
+version: 2
+
+models:
+  - name: fct_order_items
+    description: "One row per product per order. GRAIN: (order_id, p_id)."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, p_id]
+    columns:
+      - name: order_id
+        data_tests: [not_null]
+      - name: p_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: p_id
+      - name: qty
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+      - name: order_date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: country
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_country')
+                field: country
+
+  - name: fct_daily_demand
+    description: "One row per product per country per day. GRAIN: (p_id, country, order_date)."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [p_id, country, order_date]
+    columns:
+      - name: demand_key
+        data_tests: [unique, not_null]
+      - name: p_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: p_id
+      - name: country
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_country')
+                field: country
+      - name: order_date
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: units
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+
+  - name: dim_product
+    description: "One row per product. GRAIN: (p_id)."
+    columns:
+      - name: p_id
+        data_tests: [unique, not_null]
+      - name: product_name
+        data_tests:
+          # Six products have no name in the source: a fact about the company,
+          # so the build reports it every time and still succeeds.
+          - not_null:
+              config: {severity: warn}
+      - name: price
+        data_tests:
+          # Five products cost less than half a cent (0.0004 to 0.005) and round to
+          # 0.00. They are real rows of the source and they explain the 30 order
+          # lines with zero revenue, so the build reports them and still succeeds.
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+              config: {severity: warn}
+      - name: avg_rating
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 5
+
+  - name: dim_country
+    description: "One row per country. GRAIN: (country)."
+    columns:
+      - name: country
+        data_tests: [unique, not_null]
+
+  - name: dim_date
+    description: "One row per calendar day. GRAIN: (date_day)."
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]

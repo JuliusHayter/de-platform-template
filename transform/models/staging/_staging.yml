@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: "One row per order as exported, twins included. GRAIN: (order_id)."
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: buyer_id
+        data_tests: [not_null]
+      - name: order_date
+        data_tests: [not_null]
+  - name: stg_order_items
+    description: "One row per product per order, as exported. GRAIN: (order_id, p_id)."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, p_id]
+  - name: stg_payment
+    description: "One row per payment. GRAIN: (order_id): an order has exactly one."
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: amount
+        data_tests: [not_null]
+  - name: stg_review
+    description: "One row per review. GRAIN: (review_id)."
+    columns:
+      - name: review_id
+        data_tests: [unique, not_null]
+      - name: rating
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 5
+      - name: review_text
+        data_tests:
+          # Blank text is a real, known state of the data (137 of 111,322 reviews).
+          - not_null:
+              config: {severity: warn}
+  - name: stg_product
+    description: "One row per product. GRAIN: (p_id)."
+    columns:
+      - name: p_id
+        data_tests: [unique, not_null]
+  - name: stg_product_reviews
+    description: "One row per (product, review). GRAIN: (p_id, review_id)."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [p_id, review_id]
+  - name: stg_customer_shipping
+    description: "One row per (customer, address). GRAIN: (address_id)."
+    columns:
+      - name: address_id
+        data_tests: [unique, not_null]
+  - name: stg_shipping_details
+    description: "One row per address. GRAIN: (address_id)."
+    columns:
+      - name: address_id
+        data_tests: [unique, not_null]
+      - name: country
+        data_tests: [not_null]

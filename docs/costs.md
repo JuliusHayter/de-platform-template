@@ -83,3 +83,21 @@ once a grain is chosen, the other copies (`order_items_day`, `order_items_year`,
 Q2 untuned would read about 1.1 GB and cost about $0.008 a run; tuned, about
 $0.0007. The cap (1 GiB per query, $0.007) would then start to bind on the
 untuned version, which is its purpose.
+
+## Lesson 5: dbt
+
+Same prices and date as above.
+
+| Item | Quantity | Cost |
+|---|---|---|
+| One full `dbt build` (five tables, 33 s) | about 73 MiB processed | $0.0005, inside the free TiB |
+| Tests, 62 per build | each reads a few MB; fractions of a cent in total | $0 |
+| Storage, `l05_julius` | the five marts: 57.8 MB (fct_daily_demand 28.6, fct_order_items 22.2, dim_product 6.9) | $0.001 per month |
+| Twelve views | nothing stored | $0 to keep; every read of one scans bronze (see [ADR-0005](adr/0005-materialisations.md): 4.8x a table) |
+
+Cost is in reads, not storage. The one decision that moves it is views against
+tables: reading `fct_order_items` as a view over the external tables took 28.1 MB
+for a query that reads 5.9 MB from the table. A hundred times the data and a mart
+read fifty times a day would be the difference between $0.96 and $0.20 a day for
+that one query; the 1 GiB cap would trip on the view first (2.8 GB a read).
+

@@ -1,0 +1,13 @@
+# No credential in this file: `oauth` uses the gcloud login of whoever runs it
+# (gcloud auth application-default login). The project and dataset come from the
+# environment, so a clean checkout needs only those two variables.
+albert:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "{{ env_var('DBT_DATASET', 'l05_julius') }}"
+      location: europe-west1
+      threads: 4
