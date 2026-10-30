@@ -49,6 +49,56 @@ teaching team. Review and merge them like any other change.
 - **Keep `docs/architecture.md` current.** It is the diagram you present at the
   defence.
 
+## Running the pipeline from images
+
+Every job is an image on Docker Hub, pinned and tagged by date and commit
+([ADR-0006](docs/adr/0006-image-tags.md)). On a machine with nothing but Docker
+you can run any of them without cloning this repository. The newest tags are in
+[`docs/reproduce.md`](docs/reproduce.md).
+
+| Image | Does | Needs besides Docker |
+|---|---|---|
+| `julius24h/albert-ingestion:2026-10-30-5185b2e` | Extracts from the company's PostgreSQL to Parquet | The company stack running (`docker compose up -d db migrate` in its repository) |
+| `julius24h/albert-dbt:2026-10-30-5ed84e8` | Builds and tests silver and gold in BigQuery | A Google login on the machine, and a BigQuery project |
+
+**Ingestion** (writes Parquet into `./out`; `PGPASSWORD` is the company database's password):
+
+```bash
+mkdir -p out
+export PGPASSWORD=...      # not on the command line, so it stays out of shell history
+docker run --rm --network albert-marketplace_default \
+  -e PGHOST=db -e PGPASSWORD -v "$PWD/out:/data" \
+  julius24h/albert-ingestion:2026-10-30-5185b2e python extract_tables.py product
+```
+
+The image's default command is `extract_orders.py`; the consumer and the table
+extractor are run by naming them, as above. To write to the group's bucket instead,
+mount your Google credentials and set `BRONZE_URI=gs://<bucket>`.
+
+**dbt** (needs `gcloud auth application-default login` once, which is the only
+thing here that is not Docker):
+
+```bash
+export GCP_PROJECT_ID=<your-project>
+docker run --rm \
+  -v "$HOME/.config/gcloud:/home/dbt/.config/gcloud:ro" -e GCP_PROJECT_ID \
+  julius24h/albert-dbt:2026-10-30-5ed84e8 build
+```
+
+`debug`, `source freshness` and `docs generate` work the same way in place of
+`build`. The credentials are mounted read-only, and no key file is ever created.
+
+**Building the images yourself.** From the repository root, because the root
+`.dockerignore` only applies there:
+
+```bash
+docker build -f ingestion/Dockerfile -t albert-ingestion:$(date +%F)-$(git rev-parse --short HEAD) .
+docker build -f transform/Dockerfile -t albert-dbt:$(date +%F)-$(git rev-parse --short HEAD) .
+```
+
+On Windows, work from a short path such as `C:\de\` and use Git Bash for the
+`$(...)` forms.
+
 ## Layout
 
 ```
@@ -57,8 +107,10 @@ docs/
   data-flows.md      data-flow matrix
   adr/               architecture decision records
   model/             dimensional model sketches
-ingestion/           from L03
-dbt/                 from L05
+ingestion/           from L03: pipelines and their Dockerfile
+transform/           from L05: the dbt project and its Dockerfile
+warehouse/           from L04: SQL and measurements
+scripts/             retention of the images on Docker Hub
 orchestration/       from L07
 infra/               from L08
 ```
