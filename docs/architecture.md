@@ -40,11 +40,20 @@ flowchart LR
   end
 
   access{{Access today: project owners, editors and viewers via default legacy roles}} -.-> bronze
-  bronze -->|planned| silver[(Silver — warehouse, not built yet)]
+  bronze -->|"external tables, read on every query"| ext[bronze_julius: external tables]
+  ext -->|"copy 7 tables, cast order_date"| wh[(BigQuery warehouse_julius: 7 native tables<br/>order_items partitioned by month + clustered by p_id)]
+  wh --> mv[(daily_demand: materialised view<br/>partitioned like its base)]
+  bronze -->|planned| silver[(Silver — not built yet)]
   silver --> gold[(Gold — warehouse, not built yet)]
   gold --> analysts[Analysts]
   gold --> ml[ML team: daily demand]
 ```
+
+Bronze is queryable through BigQuery (lesson 4): seven tables are copied into
+native, tuned tables and one materialised view serves the ML team's daily
+demand. It reads straight off bronze, with no definition of an order between
+them, so "revenue" has two answers (13.07 M and 6.52 M EUR over twelve months;
+see [`warehouse-tuning.md`](warehouse-tuning.md)). Every query has a byte cap.
 
 Three scripts now write into bronze: two extractors (from PostgreSQL) and the
 consumer (from Kafka). The third, change data capture, was run by hand in
@@ -71,6 +80,7 @@ lesson 7. Access is still the project default
 | [0001](adr/0001-target-architecture.md) | Two-tier architecture: object storage for bronze, a warehouse for silver and gold | Accepted |
 | [0002](adr/0002-bronze-layout.md) | Bronze as zstd Parquet, partitioned by month on the three transactional tables | Accepted |
 | [0003](adr/0003-ingestion-modes.md) | Streaming consumer for clickstream, incremental cursor for orders, updates and deletes unhandled | Accepted |
+| [0004](adr/0004-warehouse-pricing.md) | BigQuery on demand with a per-query byte cap | Accepted |
 
 ## Change log
 
@@ -79,3 +89,4 @@ lesson 7. Access is still the project default
 | L01 | First version |
 | L02 | Bronze built: bucket, layout, lifecycle and real access shown; silver and gold still planned |
 | L03 | Two ingestion paths into bronze (extractor, consumer) with a dead letter queue; change data capture and Airbyte not built |
+| L04 | Warehouse added: bronze queryable, 7 native tables, month partitions, a materialised view, a byte cap. Slow-query runbook in `docs/runbooks/` |

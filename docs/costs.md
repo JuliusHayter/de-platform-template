@@ -60,3 +60,26 @@ setting that controls the bill.
 
 Not counted: the BigQuery cost of querying these files (lesson 4), and the
 laptop that runs Kafka and PostgreSQL, which is not a cloud cost.
+
+## Lesson 4: the warehouse
+
+BigQuery, `europe-west1`, same date. Storage at the active logical rate of
+$0.020 per GiB-month (taken from the Standard storage price above; BigQuery's
+own page was not checked, and its first 10 GiB each month are free). Queries at
+$7.50 per TiB with the first TiB each month free (see
+[ADR-0004](adr/0004-warehouse-pricing.md)).
+
+| Item | Quantity | Cost |
+|---|---|---|
+| Native tables, `warehouse_julius` (7 loaded tables plus 8 tuned copies of them) | 0.25 GiB | $0.005 per month, before the free allowance |
+| Materialised views (`daily_demand`, `monthly_demand`) | 18.8 MB | included above |
+| The measuring script (about 30 runs, cache off) and the table builds | well under 1 GB read in total | $0, inside the free TiB |
+| One billing floor | every table read bills 10 MiB | $0.00007 |
+
+Storage is not the cost and queries are not either, at this size. What the tuned
+copies cost is the same data stored eight times for the sake of the measurements;
+once a grain is chosen, the other copies (`order_items_day`, `order_items_year`,
+`order_items_clustered`) can be dropped. If the data were a hundred times larger,
+Q2 untuned would read about 1.1 GB and cost about $0.008 a run; tuned, about
+$0.0007. The cap (1 GiB per query, $0.007) would then start to bind on the
+untuned version, which is its purpose.
