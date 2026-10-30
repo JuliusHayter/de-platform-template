@@ -33,4 +33,15 @@ cursor in `.state/` (ignored by git); delete that file to read everything again.
 There is no Airbyte connection here: see
 [ADR-0003](../docs/adr/0003-ingestion-modes.md).
 
-In L06 each job gets its Dockerfile here.
+## Image
+
+`Dockerfile` packages the three jobs, built from the repository root:
+`docker build -f ingestion/Dockerfile -t albert-ingestion:<tag> .`
+`requirements.txt` holds the exact direct dependencies; `requirements.lock` is the
+full tree the image installs. After changing `requirements.txt`, regenerate the lock
+inside the base image so it matches what the image will really install:
+
+```bash
+docker run --rm -v "$PWD/ingestion:/w" python:3.12.12-slim-bookworm \
+  sh -c 'pip install -q -r /w/requirements.txt && pip freeze --all | grep -v "^pip=="' > ingestion/requirements.lock
+```

@@ -101,3 +101,15 @@ for a query that reads 5.9 MB from the table. A hundred times the data and a mar
 read fifty times a day would be the difference between $0.96 and $0.20 a day for
 that one query; the 1 GiB cap would trip on the view first (2.8 GB a read).
 
+## Lesson 6: images
+
+| Item | Quantity | Cost |
+|---|---|---|
+| Docker Hub, two public repositories | 153 MB and 311 MB compressed per tag | $0 (free plan) |
+| If they were on Artifact Registry instead | three tags of each: 1.36 GiB, 0.86 GiB billed above the free 0.5 | $0.09 per month ([ADR-0006](adr/0006-image-tags.md)) |
+| Local disk | ingestion 491 MB, dbt 1.06 GB uncompressed | not a cloud cost |
+
+The images carry no data and run only when started, so there is no running cost
+until lesson 7 schedules them. What a registry bills is tags nobody deleted, which
+is why the retention policy exists.
+

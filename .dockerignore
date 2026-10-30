@@ -1,0 +1,25 @@
+# Applies to every build whose context is the repository root, which is how both
+# images are built (docker build -f ingestion/Dockerfile .). It is what makes a
+# leaked secret structural to prevent rather than a thing to remember.
+**/.env
+**/.env.*
+!**/.env.example
+**/*credentials*.json
+**/service-account*.json
+**/*-key.json
+.venv
+**/.venv
+**/venv
+.git
+**/__pycache__
+**/*.pyc
+*.parquet
+out/
+**/.state/
+**/target/
+**/dbt_packages/
+**/logs/
+**/.user.yml
+docs/
+infra/
+warehouse/

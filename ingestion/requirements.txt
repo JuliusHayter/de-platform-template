@@ -1,5 +1,7 @@
-jsonschema>=4.18
-pandas
-pyarrow
-confluent-kafka
-psycopg[binary]
+# Direct dependencies, exact. requirements.lock is the full tree (below), which is
+# what the image installs.
+pandas==3.0.6
+pyarrow==26.0.0
+psycopg[binary]==3.3.6
+confluent-kafka==2.16.0
+jsonschema==4.26.0

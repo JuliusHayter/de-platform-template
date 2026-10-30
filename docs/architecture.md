@@ -47,6 +47,8 @@ flowchart LR
   silver -->|"dbt: tables, grain declared and tested"| gold[(Gold: l05_julius<br/>fct_order_items, fct_daily_demand<br/>dim_product, dim_country, dim_date)]
   gold --> analysts[Analysts]
   gold --> ml[ML team: daily demand]
+  hub[("Docker Hub<br/>albert-ingestion:2026-10-30-5185b2e<br/>albert-dbt:2026-10-30-5ed84e8")] -.->|"image runs extract_*.py and the consumer"| bronze
+  hub -.->|"image runs dbt build"| silver
   tests{{"62 tests + 2 freshness checks<br/>docs/acceptance-criteria.md"}} -.-> gold
 ```
 
@@ -88,6 +90,7 @@ lesson 7. Access is still the project default
 | [0003](adr/0003-ingestion-modes.md) | Streaming consumer for clickstream, incremental cursor for orders, updates and deletes unhandled | Accepted |
 | [0004](adr/0004-warehouse-pricing.md) | BigQuery on demand with a per-query byte cap | Accepted |
 | [0005](adr/0005-materialisations.md) | Views for staging and intermediate, tables for marts | Accepted |
+| [0006](adr/0006-image-tags.md) | Images tagged with date and commit, on Docker Hub, three tags kept | Accepted |
 
 ## Change log
 
@@ -98,3 +101,4 @@ lesson 7. Access is still the project default
 | L03 | Two ingestion paths into bronze (extractor, consumer) with a dead letter queue; change data capture and Airbyte not built |
 | L04 | Warehouse added: bronze queryable, 7 native tables, month partitions, a materialised view, a byte cap. Slow-query runbook in `docs/runbooks/` |
 | L05 | Silver and gold built with dbt in `transform/`: sources, staging, one definition of an order, a star schema with declared and tested grains, 62 tests and freshness. Lineage in `docs/lineage.md` |
+| L06 | The ingestion jobs and the dbt runner are images on Docker Hub, pinned and tagged by date and commit; reproduced from nothing (`docs/reproduce.md`) |
