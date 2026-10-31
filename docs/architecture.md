@@ -91,6 +91,7 @@ lesson 7. Access is still the project default
 | [0004](adr/0004-warehouse-pricing.md) | BigQuery on demand with a per-query byte cap | Accepted |
 | [0005](adr/0005-materialisations.md) | Views for staging and intermediate, tables for marts | Accepted |
 | [0006](adr/0006-image-tags.md) | Images tagged with date and commit, on Docker Hub, three tags kept | Accepted |
+| [0007](adr/0007-idempotency.md) | Reruns are safe by overwrite, replace and a saved cursor; MERGE where a key is trusted | Accepted |
 
 ## Change log
 
@@ -102,3 +103,4 @@ lesson 7. Access is still the project default
 | L04 | Warehouse added: bronze queryable, 7 native tables, month partitions, a materialised view, a byte cap. Slow-query runbook in `docs/runbooks/` |
 | L05 | Silver and gold built with dbt in `transform/`: sources, staging, one definition of an order, a star schema with declared and tested grains, 62 tests and freshness. Lineage in `docs/lineage.md` |
 | L06 | The ingestion jobs and the dbt runner are images on Docker Hub, pinned and tagged by date and commit; reproduced from nothing (`docs/reproduce.md`) |
+| L07 | The pipeline is an Airflow DAG (`orchestration/dags/`): two extracts in parallel, then `dbt build` as a gate that stops bad data reaching the marts. Failure alert, runbook, back-fill and fire drills in `docs/orchestration.md` |
