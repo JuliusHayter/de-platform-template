@@ -8,5 +8,6 @@ output "datasets" {
   value = [
     google_bigquery_dataset.bronze.dataset_id,
     google_bigquery_dataset.dbt.dataset_id,
+    google_bigquery_dataset.warehouse.dataset_id,
   ]
 }
