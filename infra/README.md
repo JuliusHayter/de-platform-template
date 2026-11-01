@@ -12,4 +12,6 @@ created by hand in L02-L05, with remote state in a versioned bucket.
 - [`lifecycle.json`](lifecycle.json) is the L02 file the bucket's lifecycle came from;
   `terraform/main.tf` now holds the same three rules.
 - [`iam.md`](iam.md): the access audit. Still the project defaults; L10 tightens it.
-- **L09** adds labels and budgets; **L10** tightens access.
+- [`state-lifecycle.json`](state-lifecycle.json): the lifecycle rule on the state bucket (L09), applied by hand because Terraform does not manage that bucket.
+- **L09** added the cost labels ([ADR-0009](../docs/adr/0009-cost-attribution.md), [`docs/costs.md`](../docs/costs.md)); **L10** tightens access.
+- **L10** added the classification taxonomy and policy tags in `terraform/main.tf`; who may read what is in [`docs/governance.md`](../docs/governance.md), and the access gaps that remain are in [`iam.md`](iam.md).
