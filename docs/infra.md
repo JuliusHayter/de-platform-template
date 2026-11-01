@@ -19,7 +19,8 @@ No changes. Your infrastructure matches the configuration.
 | `google_storage_bucket.bronze` (`data-engineering-a-groupe-julius-bronze`) | The bronze landing zone from L02: raw Parquet from the operational database, three lifecycle rules (Nearline at 30 days, Coldline at 90, Archive at 365, prefix `bronze/`), no delete action | Created by hand in L02, **adopted** with an `import` block |
 | `google_bigquery_dataset.bronze` (`bronze_julius`) | Holds the external tables over the bronze files, created by the SQL in `warehouse/` (L04) | Created by hand, **adopted** |
 | `google_bigquery_dataset.dbt` (`l05_julius`) | Where dbt builds silver and gold (L05); the default dataset of the L07 DAG | Created by hand, **adopted** |
-| State bucket (`data-engineering-a-groupe-julius-tfstate`) | Holds Terraform's state, with object versioning on. Terraform cannot create the place it keeps its own state | **Yes, once**: `gcloud storage buckets create gs://data-engineering-a-groupe-julius-tfstate --location=europe-west1 --uniform-bucket-level-access`, then `gcloud storage buckets update ... --versioning` |
+| `google_bigquery_dataset.warehouse` (`warehouse_julius`) | The L04 measurement copies of the same data (native, partitioned and clustered tables). **Missed in L08** and adopted in L09 when the ledger listed every dataset | Created by hand in L04, **adopted** in L09 |
+| State bucket (`data-engineering-a-groupe-julius-tfstate`) | Holds Terraform's state, with object versioning on. Terraform cannot create the place it keeps its own state | **Yes, once**: `gcloud storage buckets create gs://data-engineering-a-groupe-julius-tfstate --location=europe-west1 --uniform-bucket-level-access`, then `gcloud storage buckets update ... --versioning`. In L09 it also got labels and a lifecycle rule (`infra/state-lifecycle.json`) by hand, because Terraform does not manage it |
 
 Tables are not declared. The external tables come from the SQL in `warehouse/`
 and the silver and gold tables from dbt; declaring them here too would give two
@@ -151,4 +152,4 @@ credentials. `plan` stays on our own machines.
 
 - No `plan` in CI: it needs a federated identity (Workload Identity Federation), which our project cannot configure.
 - The state bucket carries the legacy project-default IAM (see [ADR-0008](adr/0008-remote-state.md)).
-- No budget or labels yet: L09.
+- Labels are declared for every resource, but the three datasets are only labelled once their owner applies (we are refused `bigquery.datasets.update`). No budget alert from this account. See [`docs/costs.md`](costs.md).

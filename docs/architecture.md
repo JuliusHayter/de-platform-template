@@ -105,3 +105,4 @@ lesson 7. Access is still the project default
 | L06 | The ingestion jobs and the dbt runner are images on Docker Hub, pinned and tagged by date and commit; reproduced from nothing (`docs/reproduce.md`) |
 | L07 | The pipeline is an Airflow DAG (`orchestration/dags/`): two extracts in parallel, then `dbt build` as a gate that stops bad data reaching the marts. Failure alert, runbook, back-fill and fire drills in `docs/orchestration.md` |
 | L08 | The bucket and the two BigQuery datasets are declared in `infra/terraform/` and adopted, not recreated; state is remote and versioned ([ADR-0008](adr/0008-remote-state.md)); `fmt` and `validate` run on every pull request. What is not declared, and why, is in `docs/infra.md` |
+| L09 | Every resource carries four cost labels, set in Terraform ([ADR-0009](adr/0009-cost-attribution.md)); `warehouse_julius` brought under Terraform; a cost ledger, the shape of the query spend and one measured optimisation in `docs/costs.md` |
