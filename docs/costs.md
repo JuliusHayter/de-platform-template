@@ -252,7 +252,7 @@ once released. The state versions are the recovery path in
 
 - On 2026-11-03 any lock version older than 24 hours remains: the rule's prefix or condition does not
   match (lifecycle runs asynchronously, normally within a day, so two days is enough).
-- Fewer than 5 state versions remain (4 more if none were added since): the rule is deleting the recovery path. Remove it at once.
+- Fewer than 5 state versions remain: the rule is deleting the recovery path. Remove it at once.
 - `terraform plan` stops working or reports `Error acquiring the state lock` that did not
   happen before: a lifecycle delete raced with a lock. Remove the first rule.
 
