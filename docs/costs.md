@@ -235,7 +235,8 @@ more here than any storage figure: at this size, the number of queries is the me
 |---|---|
 | Before, on 2026-11-01 | **22 versions, 50,230 B**: 18 versions of the lock file `default.tflock` (4,833 B) and 4 versions of `default.tfstate` (45,397 B) |
 | The change | `infra/state-lifecycle.json` applied to the bucket: delete a non-current lock version one day after it stops being current; delete a state version once 20 newer ones exist |
-| After | **To measure on 2026-11-03 with the same command** (below). Expected: the 4 state versions and at most 1 or 2 lock versions |
+| Same day, 2026-11-01 18:30 | **28 objects, 70,197 B**: 23 lock versions and 5 state versions. The count rose by 6 within hours, because the dataset owner applied the labels (one more state version) and every `plan` we ran wrote a lock. This is not the "after": the rule only deletes a lock a day after it stops being current, so nothing could have been purged yet |
+| After | **To measure on 2026-11-03 with the same command** (below). Expected: all 5 state versions, and **no lock version older than 24 hours**. Total object count is not the test, because every `plan` run in the last day adds a lock version |
 | Money saved | About $0.000001 a month. Nothing visible, and not the point |
 
 ```
@@ -249,9 +250,9 @@ once released. The state versions are the recovery path in
 
 **What would tell us we were wrong:**
 
-- On 2026-11-03 more than 2 lock versions remain: the rule's prefix or condition does not
+- On 2026-11-03 any lock version older than 24 hours remains: the rule's prefix or condition does not
   match (lifecycle runs asynchronously, normally within a day, so two days is enough).
-- Fewer than 4 state versions remain: the rule is deleting the recovery path. Remove it at once.
+- Fewer than 5 state versions remain (4 more if none were added since): the rule is deleting the recovery path. Remove it at once.
 - `terraform plan` stops working or reports `Error acquiring the state lock` that did not
   happen before: a lifecycle delete raced with a lock. Remove the first rule.
 
