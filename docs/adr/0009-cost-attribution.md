@@ -51,8 +51,8 @@ hand and says so.
 - **Easier:** the answer to "what does the pipeline cost" becomes a `GROUP BY` on the
   `pipeline` label once the billing export reaches us. `terraform plan` shows a missing
   or changed label in review.
-- **Harder:** the gaps are ours to watch. Three datasets are declared with labels but not
-  yet labelled, because their only owner has to apply the change. Query spend carries no
+- **Harder:** the gaps are ours to watch. Applying labels needs the rights of each resource's
+  owner: the three datasets were refused to us and labelled by their owner. Query spend carries no
   label until dbt and the DAG pass one. Spend before 2026-11-01 stays unattributable for good.
 - **Not enforced:** a person can still create an unlabelled resource. Nothing here stops that.
 

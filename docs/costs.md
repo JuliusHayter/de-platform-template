@@ -149,17 +149,18 @@ Four keys, because beyond about six people start leaving them out.
 |---|---|---|---|
 | `data-engineering-a-groupe-julius-bronze` | `marketplace-daily` | `l02` | **Yes**, through Terraform |
 | `data-engineering-a-groupe-julius-tfstate` | `terraform-state` | `l08` | **Yes, by hand** (`gcloud storage buckets update --update-labels`): Terraform does not manage this bucket |
-| `bronze_julius` | `marketplace-daily` | `l04` | **Declared, not applied** (see below) |
-| `l05_julius` | `marketplace-daily` | `l05` | **Declared, not applied** |
-| `warehouse_julius` | `warehouse-tuning` | `l04` | **Declared, not applied** |
+| `bronze_julius` | `marketplace-daily` | `l04` | **Yes**, through Terraform, applied by the dataset's owner (see below) |
+| `l05_julius` | `marketplace-daily` | `l05` | **Yes**, same |
+| `warehouse_julius` | `warehouse-tuning` | `l04` | **Yes**, same |
 
-**Declared but not applied.** `terraform apply` labelled the bucket and was refused
-on the three datasets: `403 Permission bigquery.datasets.update denied`. The datasets
-were created by another group member who is their only owner. Until that person runs
-`terraform apply`, `terraform plan` reports `0 to add, 3 to change, 0 to destroy`
-and the datasets are unlabelled. This is the same shape of gap as the missing service
-account in [`docs/infra.md`](infra.md): the configuration states the intent and the
-permissions do not yet match it.
+**Who could apply the dataset labels.** `terraform apply` from the author's account labelled
+the bucket and was refused on the three datasets: `403 Permission bigquery.datasets.update
+denied`. The datasets were created by another group member who is their only owner, and that
+member applied the same plan (`0 to add, 3 to change, 0 to destroy`, labels only) on 2026-11-01.
+Read back afterwards with `bq show`, all three carry the four labels, and `terraform plan` says
+`No changes`. The gap was a permission one, not a design one: applying Terraform that touches a
+resource needs the rights of that resource's owner, which is worth knowing before a second
+team shares the project.
 
 **`warehouse_julius` was missing from Terraform.** Lesson 8 declared only the datasets
 the pipeline reads. Listing the project's datasets to build the ledger found the L04
@@ -173,7 +174,7 @@ measurement dataset, which was then imported (`1 to import` in the same plan).
   the Airflow DAG passes a job label, so BigQuery query cost still lands on the project with
   no team. Fixing it is a `labels` entry in the dbt profile and in the DAG's BigQuery calls,
   not a Terraform change, and it is not done.
-- **The three datasets until their owner applies.**
+- **The three datasets until 2026-11-01**, when their owner applied the labels.
 - **Nothing enforces any of this.** A resource created tomorrow from the console has no labels.
 
 ### A budget alert
@@ -279,6 +280,6 @@ and are the figures recorded in the lesson named.
 | Billing budget | Alert on the project | Free; it is the teaching team's | $0 | **$0** |
 
 Total, as far as we can see: **about $0.008 a month**, almost all of it BigQuery storage
-of the L04 copies. The ledger is complete only for what is labelled: the three datasets
-become checkable by label the day they are labelled, and there may be other resources in the
+of the L04 copies. The ledger is complete only for what is labelled: every resource
+above now carries the four labels, but there may be other resources in the
 project under our name that this account cannot list (service accounts, for one).

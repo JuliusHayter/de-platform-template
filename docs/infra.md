@@ -152,4 +152,4 @@ credentials. `plan` stays on our own machines.
 
 - No `plan` in CI: it needs a federated identity (Workload Identity Federation), which our project cannot configure.
 - The state bucket carries the legacy project-default IAM (see [ADR-0008](adr/0008-remote-state.md)).
-- Labels are declared for every resource, but the three datasets are only labelled once their owner applies (we are refused `bigquery.datasets.update`). No budget alert from this account. See [`docs/costs.md`](costs.md).
+- Labels are declared and applied on every resource (the dataset owner applied the three datasets, which our account is refused). No budget alert from this account. See [`docs/costs.md`](costs.md).
