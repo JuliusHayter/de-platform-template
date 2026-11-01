@@ -1,3 +1,14 @@
+# --- Cost attribution labels (L09) --------------------------------------------
+# Four keys on every resource, applied through Terraform and never in the
+# console. Labels apply from the moment they are set and never backwards: spend
+# before 2026-11-02 stays unattributable. Reasons for each key: docs/costs.md.
+locals {
+  base_labels = {
+    team        = var.group # who to ask about the cost
+    environment = "prod"    # so a dev spike is not read as production
+  }
+}
+
 # --- Bronze: the landing zone from L02 ---------------------------------------
 resource "google_storage_bucket" "bronze" {
   name                        = "${var.project_id}-groupe-${var.group}-bronze"
@@ -7,6 +18,11 @@ resource "google_storage_bucket" "bronze" {
   # Bronze holds the raw history ("nothing that arrived is lost"): Terraform
   # must refuse to delete it while it has objects.
   force_destroy = false
+
+  labels = merge(local.base_labels, {
+    pipeline = "marketplace-daily"
+    lesson   = "l02"
+  })
 
   # Same three rules as infra/lifecycle.json. There is no Delete action.
   lifecycle_rule {
@@ -53,6 +69,11 @@ resource "google_bigquery_dataset" "bronze" {
   dataset_id                 = "bronze_${var.group}"
   location                   = var.region
   delete_contents_on_destroy = false
+
+  labels = merge(local.base_labels, {
+    pipeline = "marketplace-daily"
+    lesson   = "l04"
+  })
 }
 
 # Where dbt builds silver and gold (L05, and the default of the L07 DAG).
@@ -60,6 +81,25 @@ resource "google_bigquery_dataset" "dbt" {
   dataset_id                 = "l05_${var.group}"
   location                   = var.region
   delete_contents_on_destroy = false
+
+  labels = merge(local.base_labels, {
+    pipeline = "marketplace-daily"
+    lesson   = "l05"
+  })
+}
+
+# The L04 measurement copies (native, partitioned and clustered tables of the
+# same data). Missed by L08, which only declared what the pipeline reads: found
+# while listing the project's datasets for the L09 ledger.
+resource "google_bigquery_dataset" "warehouse" {
+  dataset_id                 = "warehouse_${var.group}"
+  location                   = var.region
+  delete_contents_on_destroy = false
+
+  labels = merge(local.base_labels, {
+    pipeline = "warehouse-tuning"
+    lesson   = "l04"
+  })
 }
 
 # --- Identity for the pipeline: NOT declared ----------------------------------
