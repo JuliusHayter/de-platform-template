@@ -51,3 +51,12 @@ The bucket and its lifecycle rules are declared in
 
 The state bucket has the same three default bindings
 ([ADR-0008](../docs/adr/0008-remote-state.md)). Both are for lesson 10.
+
+## Lesson 10: still not narrowed
+
+Read again on 2026-11-01: the same three default bindings on the bronze bucket, unchanged. The
+`projectViewer` read grant is the one broader than its reason (bronze holds `pwd`, `card_no` and `cvv`).
+We decided not to remove it in L10 because the project's members cannot be listed with our permissions,
+and a teammate who is only a viewer would lose the bucket without warning. The command to remove it, and
+to put it back, is in [`docs/governance.md`](../docs/governance.md) section 4. The access matrix says what
+each role should be able to read; the gaps between it and this page are written there.
