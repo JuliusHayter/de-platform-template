@@ -2,7 +2,8 @@
 
 Every binding on the bucket, read with
 `gcloud storage buckets get-iam-policy` on 2026-10-29. Uniform bucket-level
-access is on, so there are no per-object ACLs. Becomes Terraform in lesson 8.
+access is on, so there are no per-object ACLs. Lesson 8 declared the bucket but **not** its
+IAM: see the note at the end.
 
 | Principal | Role | Scope | Why |
 |---|---|---|---|
@@ -37,3 +38,16 @@ in lesson 8.
 Lifecycle: [`lifecycle.json`](lifecycle.json), applied and read back
 identically. It has no delete action: bronze keeps everything and moves it to
 cheaper classes.
+
+## Lesson 8: why this is still not Terraform
+
+The bucket and its lifecycle rules are declared in
+[`terraform/main.tf`](terraform/main.tf). The IAM above is not, on purpose:
+
+- The intended bindings are for service accounts, and creating one failed through
+  Terraform with `403 iam.serviceAccounts.create` ([`docs/infra.md`](../docs/infra.md)).
+- The three bindings that exist are the legacy defaults of the project. Terraform
+  cannot remove them without project-level permission we do not have.
+
+The state bucket has the same three default bindings
+([ADR-0008](../docs/adr/0008-remote-state.md)). Both are for lesson 10.
