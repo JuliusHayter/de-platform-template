@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars (never committed) and fill in.
+project_id = "your-project-id"
+group      = "your-group"

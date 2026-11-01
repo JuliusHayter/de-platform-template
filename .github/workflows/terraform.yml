@@ -1,0 +1,31 @@
+# Checks every pull request that touches infra/. It needs no cloud access:
+# `init -backend=false` sets up the provider without reading the state bucket,
+# so there is no key, no secret and no federated identity in this job.
+# `terraform plan` stays on our own machines, where our own login works.
+name: terraform
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  fmt-and-validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"   # the floor in versions.tf; any 1.9+ works
+
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
