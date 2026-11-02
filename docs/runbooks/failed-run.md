@@ -18,7 +18,7 @@ on the machine that runs it (user `airflow`, password `airflow` locally).
   failed twice and then worked sends nothing; if you got one, the task is really down.
 - The Airflow home page shows the DAG's last run red.
 
-Alerts go to **the on-call team member**.
+Alerts go to **Julius Hayter**.
 
 ## 2. What do I look at first?
 
@@ -62,7 +62,7 @@ remove them in bronze, then re-run.
 
 ## 5. Who do I tell, and when do I stop?
 
-- **Tell the on-call team member** as soon as you have read the log, with: the DAG run id, the task,
+- **Tell Julius Hayter** as soon as you have read the log, with: the DAG run id, the task,
   the last line of the error. Do not wait to fix it first.
 - **Stop and escalate** when: you have been through steps 1 to 4 for 30 minutes; or the failing
   test is on a mart (`fct_*`, `dim_*`) and the cause is not obvious; or the failure is
