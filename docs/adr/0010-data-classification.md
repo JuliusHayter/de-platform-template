@@ -2,7 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-11-01
-- **Author:** Group Julius
+- **Author:** Alexandro Bizeul
 - **Lesson:** L10
 
 ## Context
