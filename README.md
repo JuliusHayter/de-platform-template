@@ -1,22 +1,33 @@
 # Albert's Marketplace data platform: group repo
 
-This repository is your group's data platform for **Albert's Marketplace**, the
-fictional European beauty marketplace of the Data Engineering & Cloud
-Infrastructure course (MSA-DAT09-02, Albert School).
+## What this is
 
-It starts almost empty. Every lesson adds a layer on top of the previous one. By
-the end of the course it holds the platform your group defends orally:
-- ingestion
-- a bronze, silver and gold warehouse
-- containerised jobs and orchestration
-- infrastructure as code
-- cost controls and a security baseline
+The data platform of **Albert's Marketplace**, a fictional European beauty marketplace
+(course project, Data Engineering & Cloud Infrastructure, MSA-DAT09-02, Albert School).
+It takes the marketplace's operational data and turns it into tables an analyst can
+trust.
+
+- **What it does:** extracts orders, products and clickstream events into a bronze layer
+  of Parquet files on Google Cloud Storage; builds silver and gold (a star schema) in
+  BigQuery with dbt; runs the whole pipeline daily with Airflow; and declares the cloud
+  resources in Terraform.
+- **Who it is for:** analysts who read the gold tables (daily demand, revenue per product
+  and country), and the team that operates the pipeline (runbooks in `docs/runbooks/`).
+- **How to run it:** every job is a pinned image on Docker Hub, so a machine with only
+  Docker can run the pipeline without cloning the code: see
+  [Running the pipeline from images](#running-the-pipeline-from-images) and
+  [`docs/reproduce.md`](docs/reproduce.md). The scheduled version is described in
+  [`docs/orchestration.md`](docs/orchestration.md).
+- **Where to start reading:** [`docs/architecture.md`](docs/architecture.md) for the
+  diagram, then the decisions in [`docs/adr/`](docs/adr/).
 
 ## Team
 
 | Name | GitHub | Role |
 |---|---|---|
 | Julius Hayter | [JuliusHayter](https://github.com/JuliusHayter) | |
+| Alexandro Bizeul | [Alexandro-Biz24](https://github.com/Alexandro-Biz24) | |
+| Léonard Schwob | [lschwob](https://github.com/lschwob) | |
 
 ## How this repo grows
 
@@ -26,12 +37,12 @@ the end of the course it holds the platform your group defends orally:
 | L02 · Object storage foundations | Bronze layer on Cloud Storage, data dictionary v1 | `docs/` |
 | L03 · Batch, streaming, CDC | Ingestion pipelines | `ingestion/` |
 | L04 · SQL warehouses | Warehouse tables, three costed queries | `docs/` |
-| L05 · dbt and the medallion pattern | Silver and gold models, tests | `dbt/` |
-| L06 · Packaging data jobs | Dockerfiles for the ingestion job and dbt | `ingestion/`, `dbt/` |
+| L05 · dbt and the medallion pattern | Silver and gold models, tests | `transform/` |
+| L06 · Packaging data jobs | Dockerfiles for the ingestion job and dbt | `ingestion/`, `transform/` |
 | L07 · Airflow | A scheduled DAG | `orchestration/` |
 | L08 · Terraform | The platform as code, `terraform plan` in CI | `infra/`, `.github/workflows/` |
 | L09 · FinOps | Labels, a budget alert, one measured optimisation | `infra/`, `docs/` |
-| L10 · Security and governance | Least-privilege access, PII redaction, data classification | `infra/`, `dbt/`, `docs/` |
+| L10 · Security and governance | Least-privilege access, PII redaction, data classification | `infra/`, `transform/`, `docs/` |
 
 Starter files for later lessons arrive as **pull requests** opened by the
 teaching team. Review and merge them like any other change.
@@ -106,13 +117,14 @@ docs/
   architecture.md    target architecture and medallion layers
   data-flows.md      data-flow matrix
   adr/               architecture decision records
+  runbooks/          what to do when something fails
   model/             dimensional model sketches
 ingestion/           from L03: pipelines and their Dockerfile
 transform/           from L05: the dbt project and its Dockerfile
 warehouse/           from L04: SQL and measurements
 scripts/             retention of the images on Docker Hub
-orchestration/       from L07
-infra/               from L08
+orchestration/       from L07: the Airflow DAG
+infra/               from L08: Terraform (`infra/terraform/`)
 ```
 
 ## Data
