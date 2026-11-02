@@ -1,0 +1,10 @@
+{
+  "rule": [
+    { "action": { "type": "Delete" },
+      "condition": { "isLive": false, "daysSinceNoncurrentTime": 1,
+                     "matchesPrefix": ["platform/default.tflock"] } },
+    { "action": { "type": "Delete" },
+      "condition": { "numNewerVersions": 20,
+                     "matchesPrefix": ["platform/default.tfstate"] } }
+  ]
+}
