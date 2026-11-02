@@ -16,3 +16,9 @@ import {
   to = google_bigquery_dataset.dbt
   id = "projects/data-engineering-a/datasets/l05_julius"
 }
+
+# Added in L09: the L04 dataset that L08 did not declare.
+import {
+  to = google_bigquery_dataset.warehouse
+  id = "projects/data-engineering-a/datasets/warehouse_julius"
+}
