@@ -50,6 +50,14 @@ flowchart LR
   hub[("Docker Hub<br/>albert-ingestion:2026-10-30-5185b2e<br/>albert-dbt:2026-10-30-5ed84e8")] -.->|"image runs extract_*.py and the consumer"| bronze
   hub -.->|"image runs dbt build"| silver
   tests{{"62 tests + 2 freshness checks<br/>docs/acceptance-criteria.md"}} -.-> gold
+
+  airflow[["Airflow DAG marketplace_daily<br/>@daily, retries, failure alert, dbt build as the gate"]]
+  airflow -->|"runs extract_orders + extract_tables"| hub
+  airflow -->|"then dbt build"| silver
+  tf[["Terraform (infra/terraform)<br/>bucket, 3 datasets, labels, policy tags"]] -.->|declares| gcs
+  tf -.->|declares| ext
+  tfstate[("State bucket: data-engineering-a-groupe-julius-tfstate<br/>versioned, lifecycle rule")] -.-> tf
+  tax{{"Data Catalog taxonomy: pii-contact, pii-identifier, secret<br/>classes in docs/governance.md"}} -.-> ext
 ```
 
 Silver and gold now exist (lesson 5): a dbt project reads bronze through
@@ -66,8 +74,9 @@ see [`warehouse-tuning.md`](warehouse-tuning.md)). Every query has a byte cap.
 Three scripts now write into bronze: two extractors (from PostgreSQL) and the
 consumer (from Kafka). The third, change data capture, was run by hand in
 exercise 1 and has no pipeline, so its arrow is dashed. There is no Airbyte
-connector. Neither script is scheduled yet; I start them by hand until
-lesson 7. Access is still the project default
+connector. The two extractors are now scheduled by the Airflow DAG
+(lesson 7, [`orchestration.md`](orchestration.md)); the consumer still runs by
+hand. Access is still the project default
 ([`infra/iam.md`](../infra/iam.md)). Choices are argued in
 [ADR-0002](adr/0002-bronze-layout.md) and
 [ADR-0003](adr/0003-ingestion-modes.md); failure behaviour is in
@@ -92,6 +101,9 @@ lesson 7. Access is still the project default
 | [0005](adr/0005-materialisations.md) | Views for staging and intermediate, tables for marts | Accepted |
 | [0006](adr/0006-image-tags.md) | Images tagged with date and commit, on Docker Hub, three tags kept | Accepted |
 | [0007](adr/0007-idempotency.md) | Reruns are safe by overwrite, replace and a saved cursor; MERGE where a key is trusted | Accepted |
+| [0008](adr/0008-remote-state.md) | Terraform state in a versioned GCS bucket created by hand | Accepted |
+| [0009](adr/0009-cost-attribution.md) | Four cost labels set in Terraform; a ledger per resource | Accepted |
+| [0010](adr/0010-data-classification.md) | Access granted by data class, with a taxonomy and policy tags | Accepted |
 
 ## Change log
 
