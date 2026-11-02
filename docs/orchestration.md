@@ -59,15 +59,24 @@ later would meet the same outage.
 
 The alert is `on_failure_callback`, which fires once, after the last retry. It appends a line
 to `alerts.log` in the Airflow folder and, if a Slack webhook was configured, posts it to
-Slack. **Who sees it: Alexandro Bizeul.** The drill ran with that role as the recipient;
-to name a person, set `ALERT_OWNER` in the Airflow `.env` (it appears in each alert line as
-`owner=...`) and write the name here. What they are expected to do: open
+Slack. **Who sees it: Julius Hayter.** `ALERT_OWNER` in the Airflow `.env` is set to that name and
+appears in each alert line as `owner=...`; changing the recipient means changing that value
+and this line. What they are expected to do: open
 [`runbooks/failed-run.md`](runbooks/failed-run.md) and start at step 1.
 
 Drill A: the extract tasks were pointed at an image tag that does not exist
 (`ingestion_tag=does-not-exist`). Result: the tasks failed after their retries and 2
 alert line(s) were written, one per failed task and not one per attempt. Whether a person
-saw it: **not confirmed by a person (the script ran unattended)**.
+saw it: the first drill (2026-10-31) ran unattended, so it was not confirmed. It was
+repeated on 2026-11-02 with the recipient named; see below.
+
+Drill A, repeated with a named recipient (2026-11-02, `ingestion_tag=does-not-exist`,
+`RETRY_DELAY_SECONDS=10`). Both failed tasks produced an alert addressed to the person:
+
+    2026-11-02T09:40:08+00:00 ALERT marketplace_daily.extract_tables period=2026-11-02 failed after 3 tries; owner=Julius Hayter
+    2026-11-02T09:40:08+00:00 ALERT marketplace_daily.extract_orders period=2026-11-02 failed after 3 tries; owner=Julius Hayter
+
+The alert was read by Julius Hayter on 2026-11-02, who confirmed it.
 
 ```
     2026-10-31T14:59:12+00:00 ALERT marketplace_daily.extract_orders period=2026-10-31 failed after 3 tries; owner=the on-call team member
